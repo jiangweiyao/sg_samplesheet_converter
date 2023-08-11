@@ -20,9 +20,19 @@ const Index1_Sequence: &str = "Index1_Sequence";
 const Index2_Sequence: &str = "Index2_Sequence";
 
 fn converter(input: &str, output: &str) -> Result<(), Box<dyn Error>> {
+    let mut output_name_rc = String::from("_rc.csv");
+    output_name_rc.insert_str(0, output);
+    
+    let mut output_name_fs = String::from("_fs.csv");
+    output_name_fs.insert_str(0, output);
+    //let mut output_name_fs = output.clone();
+
     let mut rdr = csv::Reader::from_path(input)?;
-    let mut wtr = csv::Writer::from_path(output)?;
-    wtr.write_record(&["Sample_ID", "Index1_Sequence", "Index2_Sequence"]);
+    let mut wtr_rc = csv::Writer::from_path(output_name_rc)?;
+    wtr_rc.write_record(&["Sample_ID", "Index1_Sequence", "Index2_Sequence"]);
+    let mut wtr_fs = csv::Writer::from_path(output_name_fs)?;
+    wtr_fs.write_record(&["Sample_ID", "Index1_Sequence", "Index2_Sequence"]);
+
     for result in rdr.deserialize() {
         let record: Record = result?;
         //println!("{:?}", record);
@@ -37,7 +47,8 @@ fn converter(input: &str, output: &str) -> Result<(), Box<dyn Error>> {
         let dna_rc1_string = String::from_utf8_lossy(&*dna_rc1).to_string();
         let dna_rc2 = dna::revcomp(index2_seq.as_bytes());
         let dna_rc2_string = String::from_utf8_lossy(&*dna_rc2).to_string();
-        wtr.write_record(&[&samplename, &dna_rc2_string, &dna_rc1_string]);
+        wtr_rc.write_record(&[&samplename, &dna_rc2_string, &dna_rc1_string]);
+        wtr_fs.write_record(&[&samplename, &index2_seq, &dna_rc1_string]);
         //wtr.write_record(&["City", "State", "Population", "Latitude", "Longitude"])?;
     }
 
@@ -63,7 +74,7 @@ fn main() {
             "Input File").required();
         ap.refer(&mut output_file)
             .add_option(&["-o", "--output"], Store,
-            "Output File").required();
+            "Output File Root").required();
         ap.parse_args_or_exit();
     }
 
