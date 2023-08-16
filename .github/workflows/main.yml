@@ -84,7 +84,7 @@ jobs:
       - name: Set target environment variables
         shell: bash
         run: |
-          echo "TARGET_FLAGS=--target sg_samplesheet_converter-${{ matrix.target }}" >> $GITHUB_ENV
+          echo "TARGET_FLAGS=--target ${{ matrix.target }}" >> $GITHUB_ENV
           echo "TARGET_DIR=./target/sg_samplesheet_converter-${{ matrix.target }}" >> $GITHUB_ENV
 
       - name: Add missing target
