@@ -1,3 +1,4 @@
+#![allow(dead_code)] 
 use bio::alphabets::dna;
 use argparse::{ArgumentParser, StoreTrue, Store};
 
@@ -15,11 +16,11 @@ use std::collections::HashMap;
 
 type Record = HashMap<String, String>;
 
-const sample_ID: &str = "Sample_ID";
-const Index1_Sequence: &str = "Index1_Sequence";
-const Index2_Sequence: &str = "Index2_Sequence";
+const SAMPLE_ID: &str = "Sample_ID";
+const INDEX1_SEQUENCE: &str = "INDEX1_SEQUENCE";
+const INDEX2_SEQUENCE: &str = "INDEX2_SEQUENCE";
 
-fn converter(input: &str, output: &str) -> Result<(), Box<dyn Error>> {
+fn converter(config: Config) -> Result<(), Box<dyn Error>> {
     let mut output_name_rc = String::from("_rc.csv");
     output_name_rc.insert_str(0, output);
     
@@ -29,20 +30,20 @@ fn converter(input: &str, output: &str) -> Result<(), Box<dyn Error>> {
 
     let mut rdr = csv::Reader::from_path(input)?;
     let mut wtr_rc = csv::Writer::from_path(output_name_rc)?;
-    wtr_rc.write_record(&["Sample_ID", "Index1_Sequence", "Index2_Sequence"]);
+    wtr_rc.write_record(&["Sample_ID", "INDEX1_SEQUENCE", "INDEX2_SEQUENCE"]);
     let mut wtr_fs = csv::Writer::from_path(output_name_fs)?;
-    wtr_fs.write_record(&["Sample_ID", "Index1_Sequence", "Index2_Sequence"]);
+    wtr_fs.write_record(&["Sample_ID", "INDEX1_SEQUENCE", "INDEX2_SEQUENCE"]);
 
     for result in rdr.deserialize() {
         let record: Record = result?;
         //println!("{:?}", record);
         //println!("{:?}", record.keys());
         //println!("{:?}", record.values());
-        //let samplename = record.get(sample_ID).unwrap();
-        let samplename = record.get(sample_ID).unwrap();
+        //let samplename = record.get(SAMPLE_ID).unwrap();
+        let samplename = record.get(SAMPLE_ID).unwrap();
         //println!("{}", samplename);
-        let index1_seq = record.get(Index1_Sequence).unwrap();
-        let index2_seq = record.get(Index2_Sequence).unwrap();
+        let index1_seq = record.get(INDEX1_SEQUENCE).unwrap();
+        let index2_seq = record.get(INDEX2_SEQUENCE).unwrap();
         let dna_rc1 = dna::revcomp(index1_seq.as_bytes());
         let dna_rc1_string = String::from_utf8_lossy(&*dna_rc1).to_string();
         let dna_rc2 = dna::revcomp(index2_seq.as_bytes());
@@ -63,39 +64,39 @@ fn main() {
     let mut verbose = false;
     let mut input_file = String::new();
     let mut output_file = String::new();
+    let mut forstrand = false;
     {  // this block limits scope of borrows by ap.refer() method
         let mut ap = ArgumentParser::new();
-        ap.set_description("Convert an Illumina Samplesheet to a SG Samplesheet");
+        ap.set_description("Convert the index sequence on an Illumina Samplesheet to a SG Samplesheet");
         ap.refer(&mut verbose)
-            .add_option(&["-v", "--verbose"], StoreTrue,
-            "Be verbose");
+            .add_option(&["-v", "--verbose"], StoreTrue, "Be verbose");
+        ap.refer(&mut forstrand)
+            .add_option(&["-f", "--forwardstrand"], StoreTrue, "Input samplesheet is Forward Strand Orientation. Default (not including this flag) is for when the input sample is Reverse Complement Orientation");
         ap.refer(&mut input_file)
-            .add_option(&["-i", "--input"], Store,
-            "Input File").required();
+            .add_option(&["-i", "--input"], Store, "Input File").required();
         ap.refer(&mut output_file)
-            .add_option(&["-o", "--output"], Store,
-            "Output File Root").required();
+            .add_option(&["-o", "--output"], Store, "Output File").required();
         ap.parse_args_or_exit();
     }
 
     if verbose {
-        println!("Input is {}", input_file);
-        println!("Output is {}", output_file);
+        println!("Verbose option is {}", verbose);
+        println!("Forward Strand option is {}", forstrand);
+        println!("Input file is {}", input_file);
+        println!("Output file is {}", output_file);
     }
 
-    converter(&input_file, &output_file);
+    let config = Config { forstrand, input_file, output_file };
+    println!("Config is {} {} {}", config.forstrand, config.input_file, config.output_file);
 
-    /*let alphabet = alphabets::dna::alphabet();
-
-    let dna_rc = dna::revcomp("GATTACA".as_bytes());
-    let dna_rc_string = String::from_utf8_lossy(&*dna_rc).to_string();
-    print_type_of(&dna_rc_string);
-    println!("result: {}", dna_rc_string);
-
-    let reversed = reverse(&dna_rc_string);
-    print_type_of(&reversed);
-    println!("result: {}", reversed);*/
 }
+
+pub struct Config {
+    pub forstrand: bool,
+    pub input_file: String,
+    pub output_file: String,
+}
+
 
 fn reverse(s: &str) -> String {
     s.chars().rev().collect()
